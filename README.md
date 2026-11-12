@@ -1,223 +1,244 @@
-# ✈️ Control de Vuelos Internacionales y Pasajeros de Riesgo
+# Sistema de Control de Vuelos Internacionales y Pasajeros de Riesgo
 
-**Universidad de Pinar del Río "Hermanos Saíz Montes de Oca"**
-Facultad de Ciencias Técnicas · Departamento de Informática
-Asignatura: **Estructuras de Datos** · Curso 2026-2027
-**2do Examen Parcial · Equipo 2**
+## Universidad de Pinar del Río "Hermanos Saíz Montes de Oca"
 
-## 👥 Integrantes
+### Asignatura: Estructuras de Datos
+### Segundo Examen Parcial
+### Equipo 2
+
+#### Integrantes
 
 - Katherine Alvarez Amador
-- Adrian Jesus Pelaez Rodriguez
-- Adrian Enrique Reinoso Gómez
+- Adrián Jesús Peláez Rodríguez
+- Adrián Enrique Reinoso Gómez
 - Edgar Guillermo Hernández Domínguez
 - Alejandro Javier Montesino Ruiz
 
-## 📑 Contenido
+---
 
-1. [Descripción del problema](#1-descripción-del-problema)
-2. [Estructuras de datos empleadas](#2-estructuras-de-datos-empleadas)
-3. [Estructura del proyecto](#3-estructura-del-proyecto)
-4. [Cómo compilar y ejecutar](#4-cómo-compilar-y-ejecutar)
-5. [Casos de prueba ejecutados](#5-casos-de-prueba-ejecutados)
-6. [Presentación para la exposición oral](#6-presentación-para-la-exposición-oral)
-7. [Declaración de uso de Inteligencia Artificial](#7-declaración-de-uso-de-inteligencia-artificial)
+# Descripción del Proyecto
+
+Este proyecto implementa un sistema de gestión de vuelos internacionales desarrollado en Java mediante estructuras dinámicas enlazadas.
+
+La aplicación permite administrar vuelos y pasajeros utilizando una estructura jerárquica tipo Multilista, complementada con una Pila (LIFO), una Cola (FIFO) y algoritmos recursivos para el procesamiento de información.
+
+El objetivo principal consiste en modelar una agencia de vuelos capaz de registrar vuelos, gestionar pasajeros, controlar cancelaciones, organizar listas de espera prioritarias y detectar vuelos considerados de riesgo.
 
 ---
 
-## 1. Descripción del problema
+# Objetivo Académico
 
-Una agencia de viajes necesita automatizar el control de sus **vuelos internacionales** y de los **pasajeros** de cada uno. El sistema debe permitir:
+Aplicar los conocimientos adquiridos en la asignatura Estructuras de Datos mediante el diseño e implementación de:
 
-- Registrar los vuelos de la agencia (número, fecha y destino).
-- Registrar los pasajeros de cada vuelo (número de pasaporte, nombre, país, edad y sexo).
-- **Cancelar** el pasaje de un pasajero y poder **revertir** la última cancelación realizada.
-- Organizar una **lista de espera prioritaria** para el abordaje.
-- Determinar cuántos **vuelos son de riesgo**. Un vuelo se considera de riesgo si tiene **más de 10 pasajeros menores de 16 años**.
+- Multilistas dinámicas.
+- Pilas enlazadas.
+- Colas enlazadas.
+- Recursividad.
+- Programación Orientada a Objetos en Java.
+- Manejo de estructuras dinámicas basadas en nodos.
 
-Para resolverlo se combinan las estructuras que pide la orden del examen: una **Multilista** como modelo principal, una **Pila (LIFO)** para las cancelaciones, una **Cola (FIFO)** para el abordaje y **métodos recursivos** para el conteo de vuelos de riesgo.
+---
 
-## 2. Estructuras de datos empleadas
+# Problemática Resuelta
 
-Todas las estructuras están implementadas **desde cero con nodos enlazados** (punteros `next`), sin usar las colecciones de Java (`ArrayList`, `Stack`, `Queue`, etc.). La clase `ClaseControl` representa la agencia y concentra las operaciones.
+La agencia necesita administrar múltiples vuelos internacionales, donde cada vuelo mantiene su propia lista de pasajeros.
 
-### 2.1 Multilista: Agencia → Vuelos → Pasajeros
+El sistema permite:
 
-Es una lista simple de vuelos y cada vuelo enlaza a su propia lista simple de pasajeros.
+- Registrar nuevos vuelos.
+- Registrar pasajeros asociados a cada vuelo.
+- Gestionar cancelaciones de pasajes.
+- Recuperar la última cancelación realizada.
+- Organizar pasajeros en una lista de espera prioritaria.
+- Identificar vuelos de riesgo mediante un análisis recursivo.
 
-```
-head ─► [Vuelo AR123] ─────► [Vuelo IB456] ─────► [Vuelo LA789] ─► ...
-              │                    │                    │
-              ▼ listaPasajeros     ▼                    ▼
-        [Pasajero 1]         [Pasajero 1]         [Pasajero 1]
-              ▼ next               ▼ next               ▼ next
-        [Pasajero 2]         [Pasajero 2]         [Pasajero 2]
-              ▼                    ▼                    ▼
-            null                 null                 null
-```
+---
 
-| Clase | Papel | Atributos principales |
-|---|---|---|
-| `NodoExterno` | Nodo de la lista principal (vuelo) | `numeroVuelo`, `fecha`, `destino`, `next`, `listaPasajeros` |
-| `NodoInterno` | Nodo de la sublista (pasajero) | `numeroPasaporte`, `nombre`, `pais`, `edad`, `sexo`, `next` |
+# Estructuras de Datos Implementadas
 
-Operaciones: `agregarVuelo`, `agregarPasajero` y `mostrarDatosVuelos`. Ambas inserciones se hacen **al final** de la lista.
+## 1. Multilista
 
-### 2.2 Pila (LIFO): registro de cancelaciones
+La estructura principal del sistema está formada por una multilista de dos niveles:
 
-Guarda los pasajeros cancelados. El último en cancelarse es el primero en poder revertirse.
-
-| Clase | Papel | Atributos |
-|---|---|---|
-| `NodoCancelacion` | Nodo de la pila | `info` (el pasajero), `infoVuelo` (vuelo del que salió), `next` |
-
-Operaciones sobre la pila: `push`, `pop`, `top` e `isEmptyPila`.
-
-Operaciones de negocio que la usan:
-
-- `procesoCancelacion(nombre)`: busca al pasajero por nombre en todos los vuelos, lo **elimina de la sublista** (primero, medio o último) y lo apila con el número de su vuelo.
-- `revertirCancelacion()`: desapila la última cancelación y **reinserta al pasajero en su vuelo original** (queda al final de la lista de ese vuelo).
-- `mostrarPasajerosCancelados()`: recorre la pila de la cima hacia el fondo.
-
-### 2.3 Cola (FIFO): lista de espera prioritaria para el abordaje
-
-| Clase | Papel | Atributos |
-|---|---|---|
-| `NodoCola` | Nodo de la cola | `info` (el pasajero), `infoVuelo`, `next` |
-
-Operaciones sobre la cola: `add` (encola al final), `poll` (desencola del frente), `peek` e `isEmptyCola`. La clase mantiene los punteros `first` y `last`, por lo que encolar y desencolar es O(1).
-
-Operaciones de negocio:
-
-- `agregarCola()`: **reinicia la cola** y la vuelve a llenar recorriendo toda la multilista, primero con los pasajeros de sexo `F` y después con los de sexo `M`. Así, **las mujeres tienen prioridad de abordaje** y, dentro de cada grupo, se respeta el orden de la multilista. Al reiniciar la cola, llamar varias veces a `agregarCola()` no genera duplicados.
-- `mostrarCola(numeroVuelo)`: muestra los pasajeros en cola que pertenecen a un vuelo.
-
-> Los pasajeros se encolan por referencia pero **no se eliminan de la multilista**: la cola representa el orden de abordaje, no la baja del vuelo.
-
-### 2.4 Métodos recursivos: vuelos de riesgo
-
-Se resuelve con métodos recursivos, **sin ningún `for` ni `while`**:
-
-| Método | Qué hace | Caso base | Caso recursivo |
-|---|---|---|---|
-| `metodoContadorMenores(NodoInterno)` | Cuenta los pasajeros menores de 16 años de **una sublista** | `pasajero == null` → `0` | suma 1 si `edad < 16` y continúa con `getNext()` |
-| `metodoContadorMenoresVuelos(NodoExterno)` | Recorre la **lista de vuelos** y cuenta los que tienen más de 10 menores | `vuelos == null` → `0` | calcula los menores del vuelo; si son `> 10` suma 1, y continúa con el siguiente vuelo |
-| `metodoRecursivo()` | Punto de entrada: llama a `metodoContadorMenoresVuelos(head)` | | |
-
-### 2.5 Complejidad
-
-Con **V** vuelos y **P** pasajeros por vuelo:
-
-| Operación | Complejidad |
-|---|---|
-| `agregarVuelo` | O(V) (recorre hasta el último vuelo) |
-| `agregarPasajero` | O(V + P) |
-| `procesoCancelacion` | O(V · P) en el peor caso |
-| `push` / `pop` / `top` | O(1) |
-| `add` / `poll` / `peek` | O(1) |
-| `agregarCola` | O(V · P) |
-| `metodoRecursivo` | O(V · P) (visita cada pasajero una vez) |
-
-## 3. Estructura del proyecto
-
-```
-ParcialEstructuradeDatos/
-├── README.md
-├── docs/
-│   └── Presentacion.pdf            ← (agregar la presentación aquí)
-└── src/
-    ├── Main.java                   # Casos de prueba (21 casos)
-    ├── ClaseControl.java           # Multilista + Pila + Cola + métodos recursivos
-    ├── NodoExterno.java            # Nodo de vuelo
-    ├── NodoInterno.java            # Nodo de pasajero
-    ├── NodoCancelacion.java        # Nodo de la pila
-    └── NodoCola.java               # Nodo de la cola
+```text
+Agencia
+│
+├── Vuelo 1
+│   ├── Pasajero 1
+│   ├── Pasajero 2
+│   └── Pasajero n
+│
+├── Vuelo 2
+│   ├── Pasajero 1
+│   └── Pasajero n
+│
+└── Vuelo n
 ```
 
-## 4. Cómo compilar y ejecutar
+### Nodo Externo (Vuelo)
 
-**Requisitos:** JDK instalado. El proyecto está configurado en IntelliJ IDEA con JDK 22 y solo usa Java básico, sin dependencias externas.
+- Número de vuelo.
+- Fecha.
+- Destino.
+- Referencia al siguiente vuelo.
+- Referencia a la lista de pasajeros.
 
-**Desde IntelliJ IDEA:** abrir la carpeta del proyecto y ejecutar `Main`.
+### Nodo Interno (Pasajero)
 
-**Desde la terminal**, en la carpeta raíz del proyecto:
+- Número de pasaporte.
+- Nombre.
+- País.
+- Edad.
+- Sexo.
+- Referencia al siguiente pasajero.
 
-```bash
-javac -d out src/*.java
-java -cp out Main
+---
+
+## 2. Pila de Cancelaciones (LIFO)
+
+La pila almacena los pasajeros cancelados recientemente.
+
+### Operaciones Implementadas
+
+- Push()
+- Pop()
+- Top()
+- IsEmpty()
+
+### Funcionalidad
+
+Permite implementar una operación de deshacer (Undo), recuperando al último pasajero eliminado.
+
+---
+
+## 3. Cola de Espera Prioritaria (FIFO)
+
+La cola almacena los pasajeros que participan en el proceso de abordaje.
+
+### Operaciones Implementadas
+
+- Add()
+- Peek()
+- Poll()
+- Clear()
+- Size()
+
+La prioridad se construye insertando primero las pasajeras femeninas y posteriormente los pasajeros masculinos.
+
+---
+
+# Método Recursivo
+
+## Detección de Vuelos de Riesgo
+
+Un vuelo se considera de riesgo cuando posee más de 10 pasajeros menores de 16 años.
+
+El algoritmo realiza:
+
+1. Un recorrido recursivo de la lista de pasajeros para contar menores de edad.
+2. Un recorrido recursivo de todos los vuelos para determinar cuáles cumplen la condición de riesgo.
+
+El resultado final retorna la cantidad total de vuelos de riesgo presentes en el sistema.
+
+---
+
+# Funcionalidades del Sistema
+
+1. Registrar vuelos.
+2. Registrar pasajeros.
+3. Mostrar vuelos y pasajeros.
+4. Mostrar pasajeros cancelados.
+5. Cancelar pasajeros.
+6. Deshacer cancelaciones.
+7. Mostrar lista de espera prioritaria.
+8. Mostrar vuelos de riesgo.
+9. Ejecutar batería de pruebas automáticas.
+
+---
+
+# Casos de Prueba Implementados
+
+## Casos Positivos
+
+- Registro exitoso de vuelos.
+- Registro exitoso de pasajeros.
+- Cancelación de pasajeros.
+- Recuperación de cancelaciones.
+- Generación de la cola prioritaria.
+- Identificación correcta de vuelos de riesgo.
+
+## Casos Negativos y de Borde
+
+- Ausencia de vuelos registrados.
+- Intento de registrar pasajeros sin vuelos.
+- Vuelo inexistente.
+- Pila vacía.
+- Cola vacía.
+- Pasajeros no encontrados.
+- Vuelos sin pasajeros.
+
+---
+
+# Requisitos del Sistema
+
+- Java JDK 8 o superior.
+- IntelliJ IDEA, NetBeans o Eclipse.
+- Sistema operativo compatible con Java.
+
+---
+
+# Ejecución
+
+1. Abrir el proyecto en el IDE.
+2. Compilar todas las clases.
+3. Ejecutar Main.java.
+4. Utilizar el menú interactivo.
+
+---
+
+# Estructura del Proyecto
+
+```text
+Proyecto
+│
+├── Main.java
+├── ClaseControl.java
+├── Nodo.java
+├── NodoExterno.java
+├── NodoInterno.java
+├── LinkedStack.java
+└── LinkedQueue.java
 ```
 
-Al ejecutarse, `Main` corre los 21 casos de prueba y muestra los resultados por consola.
+---
 
-## 5. Casos de prueba ejecutados
+# Tecnologías Utilizadas
 
-Las pruebas están en `Main.java` y son **funcionales y por consola**: cada caso imprime su resultado y, cuando hay un valor esperado, lo indica. Para facilitar la lectura, los pasajeros se imprimen con el prefijo `mn` (menor de 16 años) o `my` (16 años o más).
+- Java
+- Programación Orientada a Objetos
+- Estructuras Dinámicas Enlazadas
+- Algoritmos Recursivos
 
-### Datos de prueba
+---
 
-| Vuelo | Destino | Pasajeros | Menores de 16 | ¿Es de riesgo? | Qué comprueba |
-|---|---|---|---|---|---|
-| `AR123` | Madrid | 14 | 12 | ✅ Sí | Vuelo de riesgo con adultos mezclados |
-| `IB456` | Londres | 5 | 3 | ❌ No | Pocos menores |
-| `LA789` | Lima | 15 | 15 | ✅ Sí | Todos menores |
-| `AA101` | Miami | 10 | 10 | ❌ No | **Caso borde:** exactamente 10, y la regla pide *más de* 10 |
-| `XX000` | París | 0 | 0 | ❌ No | **Caso borde:** vuelo sin pasajeros |
+# Declaración sobre el Uso de Inteligencia Artificial
 
-Resultado esperado del método recursivo: **2 vuelos de riesgo** (`AR123` y `LA789`).
+Para el desarrollo de este proyecto se utilizó Inteligencia Artificial únicamente como herramienta de apoyo académico.
 
-### ✅ Casos positivos (flujos normales)
+Su utilización estuvo orientada a:
 
-| Caso | Qué se prueba | Resultado esperado |
-|---|---|---|
-| 2 | Agregar 5 vuelos y sus pasajeros | Se registran en orden de inserción |
-| 3 | Mostrar todos los vuelos con sus pasajeros | Lista completa con prefijos `mn`/`my` |
-| 4 | Conteo recursivo de vuelos de riesgo | `2` (`AR123` y `LA789`) |
-| 5.1 | Cancelar al **primer** pasajero de una sublista (Felipe, `AR123`) | Sale de la lista y entra a la pila |
-| 5.2 | Cancelar a un pasajero del **medio** (Mateo, `AR123`) | Se reenlazan los nodos vecinos |
-| 5.3 | Cancelar al **último** pasajero (Renata, `AR123`) | La sublista termina en el nodo anterior |
-| 5.4 | Cancelar en **otro vuelo** (Edgar Guillermo, `IB456`) | Se cancela en el vuelo correcto |
-| 6 | Estado de la multilista tras las cancelaciones | Los cancelados ya no aparecen |
-| 7 | Mostrar la pila de cancelados | Orden LIFO: el más reciente primero (Edgar Guillermo) |
-| 8 | Consultar la cima con `top()` | Último cancelado y su vuelo |
-| 9 | Revertir dos cancelaciones | Vuelven Edgar Guillermo a `IB456` y Renata a `AR123`, en orden LIFO |
-| 10 y 11 | Estado de la multilista y de la pila tras revertir | Reflejan el cambio; en la pila quedan Mateo y Felipe |
-| 12 | Revertir hasta vaciar la pila | `isEmptyPila()` devuelve `true` |
-| 14 | Llenar la cola con `agregarCola()` y mostrar por vuelo | Mujeres primero, luego hombres |
-| 15 | Multilista después de llenar la cola | Los pasajeros siguen en sus vuelos |
-| 16 | Atender la cola con `poll()` | Salen en orden FIFO con las mujeres primero; al final la cola queda vacía |
-| 17 | Conteo recursivo después de operar la cola | Sigue siendo `2` |
-| 18 | Llamar a `agregarCola()` dos veces seguidas | **No hay duplicados** porque la cola se reinicia |
-| 19 | Vaciar la cola | `isEmptyCola()` devuelve `true` |
-| 20 | Agregar 12 menores más a `AR123` y recalcular | Sigue siendo `2` |
-| 21 | Estado final de la multilista | Muestra todos los datos acumulados |
+- Revisión de código.
+- Refactorización menor.
+- Apoyo en la documentación.
+- Elaboración del archivo README.
+- Verificación de buenas prácticas de programación.
 
-### ❌ Casos negativos y de borde
+La implementación de la lógica principal, estructuras de datos, algoritmos recursivos y pruebas funcionales fue desarrollada y comprendida por los miembros del equipo.
 
-| Caso | Qué se prueba | Resultado esperado |
-|---|---|---|
-| 1 | **Agencia vacía:** mostrar vuelos, cancelar, revertir, mostrar cancelados, contar riesgo y mostrar cola | Mensajes de error controlados y conteo `0`; no hay excepciones |
-| 5.5 | Cancelar a un pasajero que **no existe** | `Error: No se encontró al pasajero en los vuelos registrados.` |
-| 13 | **Revertir con la pila vacía** | `Error: No se encontraron pasajeros en la lista de cancelacion` |
-| 14 | Mostrar la cola de un vuelo **sin pasajeros** (`XX000`) | Mensaje de que no hay pasajeros en cola para ese vuelo |
-| Datos | Vuelo con **exactamente 10 menores** (`AA101`) | **No** se cuenta como de riesgo |
-| Datos | Vuelo **sin pasajeros** (`XX000`) | Se muestra `No hay Pasajeros agendados para este viaje` y no se cuenta como de riesgo |
+---
 
-> **Nota:** los resultados esperados se obtuvieron siguiendo la lógica del código. Antes de entregar, conviene ejecutar `Main` y confirmar que la salida coincide con estas tablas.
+# Conclusiones
 
-## 6. Presentación para la exposición oral
+La realización de este proyecto permitió aplicar de forma práctica los conceptos fundamentales de estructuras de datos dinámicas estudiados en la asignatura.
 
-📎 **Presentación:** _(completar: enlace a Canva / Google Slides / PowerPoint, o el archivo en `docs/Presentacion.pdf`)_
-
-## 7. Declaración de uso de Inteligencia Artificial
-
-> ⚠️ **Completar con los datos reales del equipo antes de entregar.** Esta declaración debe ser explícita y honesta, indicando en qué partes específicas se usó IA.
-
-| Parte del trabajo | ¿Se usó IA? | Herramienta | Detalle |
-|---|---|---|---|
-| Diseño de las estructuras y código en Java | _(Sí / No)_ | _(completar)_ | _(qué se hizo con ayuda de IA)_ |
-| Casos de prueba (`Main.java`) | _(Sí / No)_ | _(completar)_ | _(completar)_ |
-| Refactorización / limpieza del código | _(Sí / No)_ | _(completar)_ | _(completar)_ |
-| Redacción del `README.md` | Sí | Claude (Anthropic) | Redacción y organización del documento a partir de la orden del examen y del código del proyecto; el equipo lo revisó. |
-| Presentación para la exposición | _(Sí / No)_ | _(completar)_ | _(completar)_ |
-
-Los integrantes declaran que conocen y pueden explicar el funcionamiento de todo el código entregado.
+Mediante la implementación de multilistas, pilas, colas y algoritmos recursivos se desarrolló una solución funcional para la gestión de vuelos internacionales y pasajeros de riesgo, fortaleciendo los conocimientos de programación orientada a objetos y diseño de estructuras enlazadas en Java.
