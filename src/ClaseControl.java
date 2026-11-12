@@ -1,15 +1,12 @@
 public class ClaseControl {
     NodoExterno head;
-    NodoCancelacion headPila;
-    NodoCola first;
-    NodoCola last;
 
     public ClaseControl() {
         this.head = null;
-        this.headPila = null;
-        this.first = null;
-        this.last = null;
     }
+
+    LinkedStack<NodoInterno> pila = new LinkedStack<>();
+    LinkedQueue<NodoInterno> cola = new LinkedQueue<>();
 
 
     //1.Multilista
@@ -60,7 +57,9 @@ public class ClaseControl {
             NodoExterno temp = head;
             while (temp != null) {
                 System.out.println();
-                System.out.println("-Vuelo: " + temp.numeroVuelo + " Destino: " + temp.destino);
+                System.out.println("-Vuelo: " + temp.numeroVuelo +
+                        " | Fecha: " + temp.fecha +
+                        " | Destino: " + temp.destino);
                 if (temp.listaPasajeros == null) {
                     System.out.println("No hay Pasajeros agendados para este viaje");
                 } else {
@@ -77,40 +76,6 @@ public class ClaseControl {
     }
 
     //2.Pila
-
-    public boolean isEmptyPila() {
-        return headPila == null;
-    }
-
-    public void push(NodoInterno pasajero, String infoVuelo) {
-        NodoCancelacion nodoNuevo = new NodoCancelacion(pasajero, infoVuelo);
-        if (isEmptyPila()) {
-            headPila = nodoNuevo;
-        } else {
-            nodoNuevo.setNext(headPila);
-            headPila = nodoNuevo;
-        }
-    }
-
-    public NodoCancelacion top() {
-        if (isEmptyPila()) {
-            return null;
-        } else {
-            return headPila;
-        }
-    }
-
-    public NodoCancelacion pop() {
-        if (isEmptyPila()) {
-            return null;
-        } else {
-            NodoCancelacion temp;
-            temp = headPila;
-            headPila = headPila.getNext();
-            return temp;
-        }
-    }
-
     public void procesoCancelacion(String nombrePasajero) {
         if (head == null) {
             System.out.println("Error: No hay Vuelos programados.");
@@ -121,7 +86,7 @@ public class ClaseControl {
                 if (tempExt.listaPasajeros != null) {
                     NodoInterno tempInt = tempExt.listaPasajeros;
                     if (tempInt.getNombre().equalsIgnoreCase(nombrePasajero)) {
-                        push(tempInt, tempExt.getNumeroVuelo());
+                        pila.push(tempInt, tempExt.getNumeroVuelo());
                         System.out.println("El pasajero " + tempInt.getNombre() + " ha sido cancelado de la lista de pasajeros.");
                         tempExt.listaPasajeros = tempInt.getNext();
                         return;
@@ -131,7 +96,7 @@ public class ClaseControl {
                             NodoInterno tempInt2 = tempInt.getNext();
                             System.out.println("El pasajero " + tempInt2.getNombre() + " ha sido cancelado de la lista de pasajeros.");
                             tempInt.setNext(tempInt2.getNext());
-                            push(tempInt2, tempExt.getNumeroVuelo());
+                            pila.push(tempInt2, tempExt.getNumeroVuelo());
                             return;
                         }
                         tempInt = tempInt.getNext();
@@ -139,27 +104,27 @@ public class ClaseControl {
                 }
                 tempExt = tempExt.getNext();
             }
-            System.out.println("Error: No se encontro al Pasajero en los Vuelos registrados.");
+            System.out.println("Error: No se encontró al pasajero en los vuelos registrados.");
         }
     }
 
     public void revertirCancelacion() {
-        if (isEmptyPila()) {
+        if (pila.isEmpty()) {
             System.out.println("Error: No se encontraron pasajeros en la lista de cancelacion");
             return;
         }
-        NodoCancelacion nodoNuevo = pop();
+        Nodo<NodoInterno> nodoNuevo = pila.pop();
         NodoInterno X = nodoNuevo.getInfo();
         agregarPasajero(nodoNuevo.getInfoVuelo(), X.getNumeroPasaporte(), X.getNombre(), X.getPais(), X.getEdad(), X.getSexo());
         System.out.println("Cancelación revertida: " + X.getNombre() + ", Vuelve al vuelo: " + nodoNuevo.getInfoVuelo());
     }
 
     public void mostrarPasajerosCancelados() {
-        NodoCancelacion temp = headPila;
-        if (isEmptyPila()) {
+        if (pila.isEmpty()) {
             System.out.println("Error: No hay pasajeros cancelados");
             return;
         }
+        Nodo<NodoInterno> temp = pila.getHead();
         System.out.println("Pasajeros Cancelados: ");
         while (temp != null) {
             System.out.println("." + temp.getInfo().getNombre());
@@ -168,69 +133,48 @@ public class ClaseControl {
     }
 
     //3.Cola
-    public boolean isEmpetyCola(){
-        return first == null;
-    }
-
-    public void add(NodoInterno elem){
-        NodoCola nodoNuevo = new NodoCola(elem);
-        if(isEmpetyCola()){
-            first = nodoNuevo;
-            last = nodoNuevo;
-        }else{
-            last.setNext(nodoNuevo);
-            last = nodoNuevo;
+    public void metodoPrioridad(String sexo) {
+        if (head == null) {
+            return;
+        } else {
+            NodoExterno temp = head;
+            while (temp != null) {
+                if (temp.listaPasajeros != null) {
+                    NodoInterno tempInt = temp.listaPasajeros;
+                    while (tempInt != null) {
+                        if (tempInt.getSexo().equalsIgnoreCase(sexo)) {
+                            cola.add(tempInt, temp.getNumeroVuelo());
+                        }
+                        tempInt = tempInt.getNext();
+                    }
+                }
+                temp = temp.getNext();
+            }
         }
     }
 
-    public NodoInterno peek(){
-        if(isEmpetyCola()){
-            return null;
-        }else{
-            return first.getInfo();
-        }
+    public void agregarCola() {
+        cola.clear();
+        metodoPrioridad("F");
+        metodoPrioridad("M");
     }
 
-    public NodoInterno poll(){
-        if(isEmpetyCola()){
-            return null;
-        }else {
-            NodoInterno nodo = first.getInfo();
-            first = first.getNext();
-            return nodo;
+    public void mostrarCola(String numeroVuelo) {
+        if (cola.isEmpty()) {
+            System.out.println("No hay elementos en la cola");
+            return;
+        } else {
+            Nodo<NodoInterno> nodo = cola.getFirst();
+            while (nodo != null) {
+                if (nodo.getInfoVuelo().equalsIgnoreCase(numeroVuelo)) {
+                    System.out.println("." + nodo.getInfo().getNombre());
+                }
+                nodo = nodo.getNext();
+            }
         }
     }
 
     //4.Metodos Recursivos
-
-
-    //Ejemplo de como Seria el Metodo Sin Usar recursividad
-    public void metodoNoRecursivo() {
-        int contador;
-        if (head == null) {
-            System.out.println("Error: No hay Vuelos programados.");
-            return;
-        } else {
-            NodoExterno tempExt = head;
-            while (tempExt != null) {
-                contador = 0;
-                if (tempExt.listaPasajeros != null) {
-                    NodoInterno tempInt = tempExt.listaPasajeros;
-                    while (tempInt != null) {
-                        if (tempInt.getEdad() < 16) {
-                            contador++;
-                        }
-                        tempInt = tempInt.getNext();
-                    }
-                    if (contador >= 10) {
-                        System.out.println("El vuelo es de riesgo");
-                    }
-                }
-                tempExt = tempExt.getNext();
-            }
-            System.out.println("Error: No se encontro al Pasajero en los Vuelos registrados.");
-        }
-    }
 
     public int metodoContadorMenores(NodoInterno pasajero) {
         if (pasajero == null) { //Caso Base: Nodo Externo == null
